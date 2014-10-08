@@ -4,6 +4,7 @@ import requests
 import os
 import sys
 import json
+import re
 from xml.parsers.expat import ExpatError
 
 try:
@@ -78,22 +79,75 @@ class WHD(object):
 				error.append(e.group(1))
 
 		error = '\n'.join(error)
-		exception = exception_cls('JSS Error. Response Code: %s\tResponse" %s' %
-								  (response.status_code, error))
+		exception = exception_cls('WHD Error. Response Code: %s\tResponse" %s' % (response.status_code, error))
 		exception.status_code = response.status_code
 		raise exception
-		
-	def getAssetList(self, limit=1500):
-		url = '%s%s%s&apiKey=%s' % (self._url, 'ra/Assets?limit=', limit, self.apikey)
+
+	def get(self, url):
+		"""Generic URL retrieval"""
+		url = '%s%s&apiKey=%s' % (self._url, url, self.apikey)
+		if self.verbose:
+			print "URL: %s" % url
 		response = self.session.get(url)
-		
 		if response.status_code == 200:
 			if self.verbose:
 				print("GET: Success")
 		elif response.status_code >= 400:
-			self._error_handler(WHDGetError, response)
-			
-		# results are in JSON
-		whd_results = response.json()
-		return whd_results
-	
+			self._error_handler(WHDGetError, response)			
+		return response
+
+	def getItemQualifier(self, item, qualifier):
+		"""Generic qualifier - use as a template for other specifics"""
+		url = 'ra/%s?qualifier=(%s)' % (str(item), str(qualifier))
+		if self.verbose:
+			print "URL: %s" % url
+		response = self.get(url)
+		return response.json()
+
+	def getAssetList(self, limit=1500):
+		url = 'ra/Assets?limit=%s' % str(limit)
+		response = self.get(url)
+		return response.json()
+
+	def getAssetNumber(self, assetNumber):
+		url = 'ra/Assets?assetNumber=%s' % str(assetNumber)
+		response = self.get(url)
+		return response.json()
+		
+	def getAsset(self, assetNumber):
+		url = '%sra/Assets/%s?apiKey=%s' % (self._url, str(assetNumber), self.apikey)
+		if self.verbose:
+			print "URL: %s" % url
+		response = self.session.get(url)
+		if response.status_code == 200:
+			if self.verbose:
+				print("GET: Success")
+		elif response.status_code >= 400:
+			self._error_handler(WHDGetError, response)			
+		return response.json()
+		
+	def getAssetStatusList(self, limit=1500):
+		url = 'ra/AssetStatuses?limit=%s' % str(limit)
+		response = self.get(url)
+		return response.json()
+
+	def getAssetStatus(self, assetStatusNumber):
+		url = 'ra/AssetStatuses/%s' % str(assetStatusNumber)
+		response = self.get(url)
+		return response.json()
+
+	def getAssetBySerial(self, serialNumber):
+		qualifier = 'serialNumber %%3D \'%s\'' % serialNumber
+		return self.getItemQualifier('Assets', qualifier)
+		
+	def getDetailedAssetByAttribute(self, attribute, value, nice=false):
+		qualifier = '%s %%3D \'%s\'' % (attribute, value)
+		response = self.getAsset(self.getItemQualifier('Assets', qualifier)[0]['id'])
+		if nice:
+			return json.dumps(response, indent=4)
+		elif
+			return response
+		
+	def getAssetByMAC(self, MACAddress):
+		qualifier = 'macAddress %%3D \'%s\'' % MACAddress
+		return self.getItemQualifier('Assets', qualifier)

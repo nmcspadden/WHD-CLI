@@ -62,6 +62,10 @@ class WHD(object):
 		self.session = requests.Session()
 		headers = {'content-type': 'application/json'}
 		self.session.headers.update(headers)
+		customFieldsListFromAPI = self.getAssetCustomFieldsFromAPI()
+		self.customFieldsList = list()
+		for customField in customFieldsListFromAPI:
+			self.customFieldsList.append(customField)
 	
 	#stolen shamelessly from sheagcraig	
 	def _error_handler(self, exception_cls, response):
@@ -136,18 +140,67 @@ class WHD(object):
 		response = self.get(url)
 		return response.json()
 
-	def getAssetBySerial(self, serialNumber):
-		qualifier = 'serialNumber %%3D \'%s\'' % serialNumber
-		return self.getItemQualifier('Assets', qualifier)
-		
-	def getDetailedAssetByAttribute(self, attribute, value, nice=false):
+	def getDetailedAssetByAttribute(self, attribute, value, nice=False):
 		qualifier = '%s %%3D \'%s\'' % (attribute, value)
 		response = self.getAsset(self.getItemQualifier('Assets', qualifier)[0]['id'])
 		if nice:
 			return json.dumps(response, indent=4)
-		elif
+		else:
+			#this returns as a Python dict
 			return response
+			
+	def getAssetBySerial(self, serialNumber, nice=False):
+		return self.getDetailedAssetByAttribute('serialNumber', serialNumber, nice)
 		
-	def getAssetByMAC(self, MACAddress):
-		qualifier = 'macAddress %%3D \'%s\'' % MACAddress
-		return self.getItemQualifier('Assets', qualifier)
+	def getAssetByMACAddress(self, MACaddress, nice=False):
+		return self.getDetailedAssetByAttribute('macAddress', MACaddress, nice)
+		
+	def getAssetCustomFieldsFromAPI(self, limit=1500):
+		url = 'ra/CustomFieldDefinitions/Asset?limit=%s' % str(limit)
+		response = self.get(url)
+		#the expected result here is that you get a Python list of dicts
+		return response.json()
+		
+
+class WHDAsset(object):
+	def __init__(self, whd, json):
+		#Base class for WHD Assets
+		if not isinstance(whd, WHD):
+			raise TypeError("Argument whd must be an instance of WHD.")
+		self.whd = whd
+		#for now, assume json is a dict
+		#assign all the variables to locals
+		self.id = json['id']
+		self.type = json['type']
+		self.assetNumber = json['assetNumber']
+		self.macAddress = json['macAddress']
+		self.networkName = json['networkName']
+		self.warrantyExpirationDate = json['warrantyExpirationDate']
+		self.billingRate = json['billingRate']
+		self.purchaseDate = json['purchaseDate']
+		self.isReservable = json['isReservable']
+		self.isSynchronizationDisabled = json['isSynchronizationDisabled']
+		self.warrantyType = json['warrantyType']
+		self.assetstatus = json['assetstatus']
+		self.isDeleted = json['isDeleted']
+		self.isNotesVisibleToClients = json=['isNotesVisibleToClients']
+		self.version = json['version']
+		self.location = json['location']
+		self.type = json['type']
+		self.networkName = json['networkName']
+		self.model = json['model']
+		self.networkAddress = json['networkAddress']
+		self.contractExpiration = json['contractExpiration']
+		self.notes = json['notes']
+		self.clients = json['clients']
+		self.leaseExpirationDate = json['leaseExpirationDate']
+		#deal with custom fields in a special way
+		#custom fields are a Python dictionary
+		
+class WHDAssetCustomField(object):
+	def __init__(self, customField):
+		#Class for custom fields specifically for assets
+		if not isinstance(customField, dict):
+			raise TypeError("Argument customField must be a Python dict.")
+		self.customField = customField
+		

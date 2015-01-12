@@ -62,10 +62,10 @@ class WHD(object):
 		self.session = requests.Session()
 		headers = {'content-type': 'application/json'}
 		self.session.headers.update(headers)
-		customFieldsListFromAPI = self.getAssetCustomFieldsFromAPI()
-		self.customFieldsList = list()
-		for customField in customFieldsListFromAPI:
-			self.customFieldsList.append(customField)
+		self.customFieldsDict = dict()
+		for customField in self.getAssetCustomFieldsFromAPI():
+			self.customFieldsDict[customField['id']] = customField['label']
+			#now we can access the label for a given attribute 
 	
 	#stolen shamelessly from sheagcraig	
 	def _error_handler(self, exception_cls, response):
@@ -91,7 +91,7 @@ class WHD(object):
 		"""Generic URL retrieval"""
 		url = '%s%s&apiKey=%s' % (self._url, url, self.apikey)
 		if self.verbose:
-			print "URL: %s" % url
+			print "get URL: %s" % url
 		response = self.session.get(url)
 		if response.status_code == 200:
 			if self.verbose:
@@ -104,7 +104,7 @@ class WHD(object):
 		"""Generic qualifier - use as a template for other specifics"""
 		url = 'ra/%s?qualifier=(%s)' % (str(item), str(qualifier))
 		if self.verbose:
-			print "URL: %s" % url
+			print "getItemQualifier URL: %s" % url
 		response = self.get(url)
 		return response.json()
 
@@ -121,13 +121,13 @@ class WHD(object):
 	def getAsset(self, assetNumber):
 		url = '%sra/Assets/%s?apiKey=%s' % (self._url, str(assetNumber), self.apikey)
 		if self.verbose:
-			print "URL: %s" % url
+			print "getAsset URL: %s" % url
 		response = self.session.get(url)
 		if response.status_code == 200:
 			if self.verbose:
 				print("GET: Success")
 		elif response.status_code >= 400:
-			self._error_handler(WHDGetError, response)			
+			self._error_handler(WHDGetError, response)
 		return response.json()
 		
 	def getAssetStatusList(self, limit=1500):
@@ -142,7 +142,12 @@ class WHD(object):
 
 	def getDetailedAssetByAttribute(self, attribute, value, nice=False):
 		qualifier = '%s %%3D \'%s\'' % (attribute, value)
-		response = self.getAsset(self.getItemQualifier('Assets', qualifier)[0]['id'])
+		result = self.getItemQualifier('Assets', qualifier)
+		if not result:
+			if self.verbose:
+				print "No matching results."
+			return False
+		response = self.getAsset(result[0]['id'])
 		if nice:
 			return json.dumps(response, indent=4)
 		else:
@@ -160,6 +165,10 @@ class WHD(object):
 		response = self.get(url)
 		#the expected result here is that you get a Python list of dicts
 		return response.json()
+		
+	def retrieveCustomFieldNamesFromID(self, id):
+		customFieldLabels = list()
+		
 		
 
 class WHDAsset(object):
@@ -196,6 +205,7 @@ class WHDAsset(object):
 		self.leaseExpirationDate = json['leaseExpirationDate']
 		#deal with custom fields in a special way
 		#custom fields are a Python dictionary
+		customFieldsList = json['assetCustomFields']
 		
 class WHDAssetCustomField(object):
 	def __init__(self, customField):

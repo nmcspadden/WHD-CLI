@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import requests
 import os
@@ -15,17 +15,10 @@ except ImportError as e:
         print("See README for information on this issue.")
     import plistlib
 
+# Exceptions are moved to their own file
+
 # this preference-reading code is shamelessly stolen from sheagcraig's python-jss
 # https://github.com/sheagcraig/python-jss/blob/master/jss/jss.py#L76
-
-class WHDPrefsMissingFileError(Exception):
-	pass
-
-class WHDPrefsMissingKeyError(Exception):
-	pass
-	
-class WHDGetError(Exception):
-	pass
 
 class WHDPrefs(object):
 	def __init__(self, preferences_file=None):

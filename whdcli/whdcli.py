@@ -7,6 +7,8 @@ import json
 import re
 from xml.parsers.expat import ExpatError
 
+from .exceptions import *
+
 try:
     import FoundationPlist
 except ImportError as e:

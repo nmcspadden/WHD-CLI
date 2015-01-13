@@ -7,7 +7,8 @@ import json
 import re
 from xml.parsers.expat import ExpatError
 
-from .exceptions import *
+from .exceptions import (
+WHDPrefsMissingFileError, WHDPrefsMissingKeyError, WHDGetError)
 
 try:
     import FoundationPlist

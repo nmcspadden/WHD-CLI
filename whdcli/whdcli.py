@@ -98,7 +98,7 @@ class WHD(object):
 
 	def getItemQualifier(self, item, qualifier):
 		"""Generic qualifier - use as a template for other specifics"""
-		url = 'ra/%s?qualifier=(%s)' % (str(item), str(qualifier))
+		url = 'ra/%s?qualifier=((deleted %%3D 0)and(%s))' % (str(item), str(qualifier))
 		if self.verbose:
 			print "getItemQualifier URL: %s" % url
 		response = self.get(url)
